@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventlix.com | Inventory Management System</title>
+    <link rel="stylesheet" href="{% static 'css/index_styles.css' %}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">Inventlix.com</div>
+        <ul class="nav-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+        <a href="{% url 'login' %}" class="login-button">Login</a>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <h1>Smart Inventory Management</h1>
+        <p>Track. Manage. Optimize. All from one platform.</p>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <h2>Why Choose Inventlix?</h2>
+        <div class="feature-grid">
+            <div class="feature-box">
+                <h3>Product Management</h3>
+                <p>Easily add, update, and delete product details with a user-friendly interface.</p>
+            </div>
+            <div class="feature-box">
+                <h3>Stock Alerts</h3>
+                <p>Get notifications when stock levels fall below safe thresholds.</p>
+            </div>
+            <div class="feature-box">
+                <h3>Real-Time Dashboard</h3>
+                <p>Visualize inventory stats and insights in real time.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact" id="contact">
+        <h2>Get in Touch</h2>
+        <p>If you have any questions, feel free to reach out to us at <a href="mailto:support@inventlix.com">support@inventlix.com</a>.</p>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 Inventlix.com. All rights reserved.</p>
+    </footer>
+</body>
+</html>

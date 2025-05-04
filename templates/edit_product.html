@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Product | Inventlix</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Edit Product</h1>
+
+        <form method="POST">
+            {% csrf_token %}
+            <label for="name">Product Name:</label>
+            <input type="text" name="name" value="{{ product.name }}" required>
+
+            <label for="sku_code">SKU Code:</label>
+            <input type="text" name="sku_code" value="{{ product.sku_code }}" required>
+
+            <label for="price">Price:</label>
+            <input type="number" name="price" step="0.01" value="{{ product.price }}" required>
+
+            <label for="category">Category:</label>
+            <select name="category" required>
+                {% for category in categories %}
+                    <option value="{{ category.id }}" {% if product.category.id == category.id %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <label for="minimum_quantity">Minimum Quantity:</label>
+            <input type="number" name="minimum_quantity" value="{{ product.minimum_quantity }}" required>
+
+            <label for="quantity">Quantity:</label>
+            <input type="number" name="quantity" value="{{ product.quantity }}" required>
+
+            <label for="image_path">Image Path:</label>
+            <input type="text" name="image_path" value="{{ product.image_path }}">
+
+            <button type="submit">Update Product</button>
+        </form>
+
+        <a href="{% url 'inventory_dashboard' %}">← Back to Dashboard</a>
+    </div>
+</body>
+</html>
