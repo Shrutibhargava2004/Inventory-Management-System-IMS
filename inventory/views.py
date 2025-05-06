@@ -60,15 +60,11 @@ def inventory_dashboard(request):
     search_query = request.GET.get('q', '')
     category_id = request.GET.get('category', '')
     products = ProductInventory.objects.all()
-
     if search_query:
         products = products.filter(name__icontains=search_query)
-
     if category_id:
         products = products.filter(category_id=category_id)
-
     low_stock_products = products.filter(quantity__lt=F('minimum_quantity'))
-
     context = {
         'products': products,
         'low_stock_products': low_stock_products,
@@ -111,7 +107,6 @@ def add_product_view(request):
 
 def edit_product_view(request, product_id):
     product = get_object_or_404(ProductInventory, id=product_id)
-
     if request.method == 'POST':
         product.name = request.POST.get('name')
         product.sku_code = request.POST.get('sku_code')
@@ -120,13 +115,10 @@ def edit_product_view(request, product_id):
         product.minimum_quantity = request.POST.get('minimum_quantity')
         product.image_path = request.POST.get('image_path')
         category_id = request.POST.get('category')
-
         product.category = Category.objects.get(id=category_id)
         product.save()
-
         messages.success(request, "Product updated successfully.")
         return redirect('inventory_dashboard')
-
     categories = Category.objects.all()
     context = {
         'product': product,
@@ -143,17 +135,15 @@ def delete_product_view(request, product_id):
 @login_required
 def add_category_view(request):
     if request.method == 'POST':
-        category_name = request.POST.get('name')  # Retrieve the name from the form
+        category_name = request.POST.get('name')  
         
         if category_name:
-            # Check if the category already exists
             existing_category = Category.objects.filter(name=category_name).first()
             
             if existing_category:
                 messages.error(request, "Category with this name already exists.")
             else:
                 try:
-                    # Create a new category
                     new_category = Category(name=category_name)
                     new_category.save()
                     messages.success(request, "Category added successfully.")
@@ -162,9 +152,8 @@ def add_category_view(request):
         else:
             messages.error(request, "Category name cannot be empty.")
 
-        return redirect('inventory_dashboard')  # Redirect to the dashboard after attempting to add category
+        return redirect('inventory_dashboard')  
 
-    return redirect('inventory_dashboard')  # If not a POST request, redirect to the dashboard
-
+    return redirect('inventory_dashboard') 
 
 
