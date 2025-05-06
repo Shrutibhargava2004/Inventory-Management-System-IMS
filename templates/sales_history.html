@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sales History | Inventlix</title>
+    <link rel="stylesheet" href="{% static 'css/sales_history_styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Sales History for Today</h1>
+
+        {% if sales %}
+            <table class="sales-table">
+                <thead>
+                    <tr>
+                        <th>Sale ID</th>
+                        <th>Total Amount (₹)</th>
+                        <th>Items Sold</th>
+                        <th>Sale Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in sales %}
+                    <tr>
+                        <td>{{ sale.id }}</td>
+                        <td>{{ sale.total_amount }}</td>
+                        <td>
+                            <ul>
+                                {% for item in sale.salesitem_set.all %}
+                                <li>{{ item.product.name }} - {{ item.quantity }} @ ₹{{ item.price }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                        <td>{{ sale.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No sales have been made today.</p>
+        {% endif %}
+
+        <a href="{% url 'sales_dashboard' %}">← Back to Dashboard</a>
+    </div>
+</body>
+</html>

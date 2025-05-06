@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, ProductInventory, Employee
+from .models import Category, ProductInventory, Employee, Sale, SalesItem
 
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('id', 'name')
@@ -10,6 +10,28 @@ class ProductInventoryAdmin(admin.ModelAdmin):
 class EmployeeAdmin(admin.ModelAdmin):
     list_display = ('id', 'username', 'email', 'password', 'role', 'created_at')
 
+class SaleAdmin(admin.ModelAdmin):
+    list_display = ('id', 'total_amount', 'created_at')
+    search_fields = ('id',)
+    
+    # Customizing 'created_at' to display the creation date of the sale
+    def created_at(self, obj):
+        return obj.created_at.strftime('%Y-%m-%d %H:%M:%S')  # Assuming 'created_at' is a DateTimeField
+    created_at.admin_order_field = 'created_at'
+    created_at.short_description = 'Created At'
+
+class SalesItemAdmin(admin.ModelAdmin):
+    list_display = ('sale', 'product', 'quantity', 'price')
+    search_fields = ('sale__id', 'product__name')
+
+    # Customizing 'price' to show the price from the related ProductInventory model
+    def price(self, obj):
+        return obj.product.price
+    price.admin_order_field = 'product__price'
+    price.short_description = 'Price'
+
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(ProductInventory, ProductInventoryAdmin)
 admin.site.register(Employee, EmployeeAdmin)
+admin.site.register(Sale, SaleAdmin)
+admin.site.register(SalesItem, SalesItemAdmin)

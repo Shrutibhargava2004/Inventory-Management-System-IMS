@@ -1,0 +1,96 @@
+/* General Body and Container Styling */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f6f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+h1 {
+    text-align: center;
+    color: #4CAF50;
+    margin-bottom: 20px;
+}
+
+button {
+    font-size: 16px;
+    padding: 10px 20px;
+    margin-right: 10px;
+}
+
+.btn {
+    font-weight: bold;
+}
+
+/* Search Bar */
+#searchBar {
+    width: 100%;
+    padding: 10px;
+    margin: 20px 0;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Product Table */
+.table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.table th {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.table td input {
+    width: 80px;
+}
+
+/* Modal Styling */
+.modal-dialog {
+    max-width: 500px;
+}
+
+.modal-content {
+    padding: 20px;
+}
+
+.modal-header {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+/* Button Styles */
+#proceedButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Table Row Highlight */
+.invalid-input {
+    background-color: #f8d7da;
+}
+

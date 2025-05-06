@@ -23,12 +23,15 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('login/', views.login_view, name='login'),
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
-    path('sales/dashboard/', views.sales_dashboard, name='sales_dashboard'),
 
     path('inventory/dashboard/', views.inventory_dashboard, name='inventory_dashboard'),
     path('inventory/add/', views.add_product_view, name='add_product'),
     path('inventory/edit/<int:product_id>/', views.edit_product_view, name='edit_product'),
     path('inventory/delete/<int:product_id>/', views.delete_product_view, name='delete_product'),
     path('category/add/', views.add_category_view, name='add_category'),
+
+    path('sales/dashboard/', views.sales_dashboard, name='sales_dashboard'),
+    path('sales/confirm/', views.confirm_sale, name='confirm_sale'),
+    path('sales/history/', views.sales_history, name='sales_history'),
 
 ]

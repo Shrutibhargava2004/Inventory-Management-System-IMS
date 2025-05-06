@@ -1,12 +1,13 @@
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from .models import ProductInventory, Category, Employee
+from .models import ProductInventory, Category, Employee, Sale, SalesItem
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse ,JsonResponse
 from django.db.models import F
+from django.utils import timezone
 
 
 # Create your views here.
@@ -40,9 +41,6 @@ def login_view(request):
             messages.error(request, "Invalid username or role.")
     
     return render(request, 'login.html')
-
-def sales_dashboard(request):
-    return HttpResponse("Welcome to Salesperson Dashboard!")
 
 def admin_dashboard(request):
     return HttpResponse("Welcome to Admin Dashboard!")
@@ -156,4 +154,115 @@ def add_category_view(request):
 
     return redirect('inventory_dashboard') 
 
+@login_required
+def sales_dashboard(request):
+    products = ProductInventory.objects.all()
+    categories = Category.objects.all()
+    return render(request, 'sales_dashboard.html', {
+        'products': products,
+        'categories': categories
+    })
 
+@login_required
+def confirm_sale(request):
+    if request.method == 'POST':
+        # Get the list of selected products and quantities from the POST request
+        sale_items = request.POST.getlist('sale_items')  # A list of product IDs and quantities
+        total_amount = 0
+        
+        # Create the Sale record
+        sale = Sale.objects.create(total_amount=total_amount)
+        
+        # Loop through the sale items and create SalesItem records
+        for item in sale_items:
+            product_id, quantity = item.split(':')  # Assuming format 'product_id:quantity'
+            product = ProductInventory.objects.get(id=product_id)
+            quantity = int(quantity)
+            
+            if product.quantity >= quantity:  # Check if enough stock is available
+                # Create SalesItem record
+                sales_item = SalesItem.objects.create(
+                    sale=sale,
+                    product=product,
+                    quantity=quantity,
+                    price=product.price,
+                )
+                
+                # Update inventory
+                product.quantity -= quantity
+                product.save()
+
+                # Add to total amount
+                total_amount += product.price * quantity
+            else:
+                return JsonResponse({'error': 'Insufficient stock for product: ' + product.name})
+
+        # Update the total amount in the sale record
+        sale.total_amount = total_amount
+        sale.save()
+
+        # Return success message
+        return JsonResponse({'success': 'Sale completed successfully', 'sale_id': sale.id})
+    
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+@login_required
+def sales_history(request):
+    # Get the current date (ignoring time)
+    today = timezone.now().date()
+
+    # Fetch all sales for today
+    sales = Sale.objects.filter(created_at__date=today)
+
+    return render(request, 'sales_history.html', {'sales': sales})
+
+def process_sale(request):
+    if request.method == 'POST':
+        # Assuming `selected_items` contains the selected product ids and quantities from the form
+        selected_items = request.POST.getlist('selected_items')  # A list of product_id:quantity pairs
+        total_amount = 0
+        sale_items = []
+        
+        # Start a transaction to ensure that both Sale and SalesItems are created correctly
+        with transaction.atomic():
+            # Create a new Sale entry
+            sale = Sale(total_amount=0)  # Total amount is set later after calculating the sale items
+            sale.save()
+
+            for item in selected_items:
+                product_id, quantity = item.split(':')
+                product = ProductInventory.objects.get(id=product_id)
+                quantity = int(quantity)
+                
+                if product.quantity < quantity:
+                    messages.error(request, f"Not enough stock for {product.name}")
+                    return redirect('sales_dashboard')  # Redirect to the sales dashboard if not enough stock
+                
+                # Create the SalesItem entry
+                sales_item = SalesItem(
+                    sale=sale,
+                    product=product,
+                    quantity=quantity,
+                    price=product.price
+                )
+                sales_item.save()
+                sale_items.append(sales_item)
+                
+                # Update the product quantity in inventory
+                product.quantity -= quantity
+                product.save()
+                
+                # Calculate total amount for the sale
+                total_amount += product.price * quantity
+
+            # Update the Sale's total amount after all items are added
+            sale.total_amount = total_amount
+            sale.save()
+
+            # Success message
+            messages.success(request, f"Sale completed successfully! Total: ₹{total_amount}")
+            
+        # Redirect to a page after processing the sale (e.g., sales dashboard or sales history)
+        return redirect('sales_dashboard')
+
+    return render(request, 'sales_dashboard.html')
