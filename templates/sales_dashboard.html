@@ -12,7 +12,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Welcome, Salesperson</h1>
+        <h1>Welcome, {{ employee.username }}</h1>
         
         <div class="row mb-4">
             <div class="col">
@@ -30,37 +30,40 @@
 
         <!-- Products List -->
         <h3>Available Products</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">Product Name</th>
-                    <th scope="col">SKU</th>
-                    <th scope="col">Category</th>
-                    <th scope="col">Price (₹)</th>
-                    <th scope="col">Quantity</th>
-                    <th scope="col">Select</th>
-                </tr>
-            </thead>
-            <tbody id="productList">
-                {% for product in products %}
-                <tr>
-                    <td>{{ product.id }}</td>
-                    <td>{{ product.name }}</td>
-                    <td>{{ product.sku_code }}</td>
-                    <td>{{ product.category.name }}</td>
-                    <td>{{ product.price }}</td>
-                    <td>{{ product.quantity }}</td>
-                    <td>
-                        <input type="number" class="form-control quantity-input" data-id="{{ product.id }}" min="1" max="{{ product.quantity }}" placeholder="Enter quantity" oninput="updateTotal()">
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <form id="saleForm">
+            {% csrf_token %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Product Name</th>
+                        <th scope="col">SKU</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Price (₹)</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Select</th>
+                    </tr>
+                </thead>
+                <tbody id="productList">
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.id }}</td>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.sku_code }}</td>
+                        <td>{{ product.category.name }}</td>
+                        <td>{{ product.price }}</td>
+                        <td>{{ product.quantity }}</td>
+                        <td>
+                            <input type="number" class="form-control quantity-input" name="product_{{ product.id }}" data-id="{{ product.id }}" min="1" max="{{ product.quantity }}" placeholder="Enter quantity" oninput="updateTotal()">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
 
-        <!-- Proceed Button (disabled initially) -->
-        <button class="btn btn-success" id="proceedButton" data-bs-toggle="modal" data-bs-target="#confirmSaleModal" disabled>Proceed</button>
+            <!-- Proceed Button (disabled initially) -->
+            <button type="button" class="btn btn-success" id="proceedButton" data-bs-toggle="modal" data-bs-target="#confirmSaleModal" disabled>Proceed</button>
+        </form>
 
         <!-- Modal: Confirm Sale -->
         <div class="modal fade" id="confirmSaleModal" tabindex="-1" aria-labelledby="confirmSaleModalLabel" aria-hidden="true">
@@ -77,7 +80,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
-                        <button type="button" class="btn btn-primary" id="purchaseButton">Purchase</button>
+                        <button type="submit" class="btn btn-primary" id="purchaseButton">Purchase</button>
                         <button type="button" class="btn btn-danger" id="cancelSaleButton">Cancel Sale</button>
                     </div>
                 </div>
@@ -95,7 +98,7 @@
                     <div class="modal-body">
                         <ul id="salesHistoryList">
                             {% for sale in sales %}
-                                <li>Sale ID: {{ sale.id }} | Total: ₹{{ sale.total_amount }} | Date: {{ sale.date }}</li>
+                                <li>Sale ID: {{ sale.id }} | Total: ₹{{ sale.total_amount }} | Date: {{ sale.created_at }}</li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -105,61 +108,123 @@
     </div>
 
     <script>
-        function filterProducts() {
-            let input = document.getElementById("searchBar");
-            let filter = input.value.toLowerCase();
-            let table = document.getElementById("productList");
-            let tr = table.getElementsByTagName("tr");
-            
-            for (let i = 0; i < tr.length; i++) {
-                let td = tr[i].getElementsByTagName("td")[1]; // Product name column
-                if (td) {
-                    let txtValue = td.textContent || td.innerText;
-                    tr[i].style.display = txtValue.toLowerCase().indexOf(filter) > -1 ? "" : "none";
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + "=")) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
                 }
             }
+            return cookieValue;
         }
-
+    
+        function filterProducts() {
+            const input = document.getElementById("searchBar");
+            const filter = input.value.toLowerCase();
+            const rows = document.querySelectorAll("#productList tr");
+    
+            rows.forEach(row => {
+                const productName = row.querySelectorAll("td")[1].textContent.toLowerCase();
+                row.style.display = productName.includes(filter) ? "" : "none";
+            });
+        }
+    
         function updateTotal() {
             let totalAmount = 0;
             let selectedProducts = [];
             document.querySelectorAll(".quantity-input").forEach(input => {
-                let quantity = parseInt(input.value);
-                let productId = input.getAttribute("data-id");
-                let price = parseFloat(input.closest("tr").cells[4].textContent); // Price from the table
-                let availableQuantity = parseInt(input.closest("tr").cells[5].textContent); // Available stock
-                
-                if (quantity > 0 && quantity <= availableQuantity) {
+                const quantity = parseInt(input.value);
+                const productId = input.getAttribute("data-id");
+                const row = input.closest("tr");
+                const price = parseFloat(row.cells[4].textContent);
+                const available = parseInt(row.cells[5].textContent);
+    
+                if (quantity > 0 && quantity <= available) {
                     totalAmount += price * quantity;
-                    selectedProducts.push({ id: productId, name: input.closest("tr").cells[1].textContent, quantity, total: price * quantity });
+                    selectedProducts.push({
+                        id: productId,
+                        name: row.cells[1].textContent,
+                        quantity: quantity,
+                        total: price * quantity
+                    });
                 }
             });
-
-            // Update total amount
+    
             document.getElementById("totalAmount").textContent = totalAmount.toFixed(2);
-
-            // Update the selected products list
-            let selectedProductsList = document.getElementById("selectedProductsList");
-            selectedProductsList.innerHTML = "";
-            selectedProducts.forEach(product => {
-                selectedProductsList.innerHTML += `<li>${product.name} (Quantity: ${product.quantity}) - ₹${product.total.toFixed(2)}</li>`;
+            const list = document.getElementById("selectedProductsList");
+            list.innerHTML = "";
+            selectedProducts.forEach(p => {
+                list.innerHTML += `<li>${p.name} (Qty: ${p.quantity}) - ₹${p.total.toFixed(2)}</li>`;
             });
-
-            // Enable/disable the Proceed button
+    
             document.getElementById("proceedButton").disabled = selectedProducts.length === 0;
         }
-
-        document.getElementById("purchaseButton").addEventListener("click", function() {
-            // Here, you can make an AJAX request to process the sale and update inventory
-            alert("Sale completed successfully!");
-            window.location.reload();  // Reload to reset the page after successful sale
+    
+        document.getElementById("purchaseButton").addEventListener("click", function () {
+            const saleItems = [];
+            document.querySelectorAll(".quantity-input").forEach(input => {
+                const quantity = parseInt(input.value);
+                const productId = input.getAttribute("data-id");
+                const row = input.closest("tr");
+                const available = parseInt(row.cells[5].textContent);
+    
+                if (!isNaN(quantity) && quantity > 0 && quantity <= available) {
+                    saleItems.push(`${productId}:${quantity}`);
+                }
+            });
+    
+            if (saleItems.length === 0) {
+                alert("Please select at least one valid product with quantity.");
+                return;
+            }
+    
+            fetch("{% url 'process_sale' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                body: new URLSearchParams({
+                    "sale_items": saleItems.join(",")
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`${data.success} (Sale ID: ${data.sale_id})`);
+                    location.reload();
+                } else if (data.error) {
+                    alert("❌ " + data.error);
+                }
+            })
+            .catch(err => {
+                alert("❌ Failed to process sale.");
+                console.error(err);
+            });
         });
-
-        document.getElementById("cancelSaleButton").addEventListener("click", function() {
-            document.querySelectorAll(".quantity-input").forEach(input => input.value = "");  // Reset all inputs
+    
+        document.getElementById("cancelSaleButton").addEventListener("click", function () {
+            document.querySelectorAll(".quantity-input").forEach(input => input.value = "");
             updateTotal();
-            $('#confirmSaleModal').modal('hide');  // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById("confirmSaleModal"));
+            modal.hide();
+        });
+    
+        document.getElementById("proceedButton").addEventListener("click", function (e) {
+            e.preventDefault();  // Prevent form submission
+        });
+    
+        // Bind updateTotal on input
+        document.querySelectorAll(".quantity-input").forEach(input => {
+            input.addEventListener("input", updateTotal);
         });
     </script>
+    
+
 </body>
 </html>

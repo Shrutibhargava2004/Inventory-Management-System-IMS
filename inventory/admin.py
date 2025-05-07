@@ -11,14 +11,10 @@ class EmployeeAdmin(admin.ModelAdmin):
     list_display = ('id', 'username', 'email', 'password', 'role', 'created_at')
 
 class SaleAdmin(admin.ModelAdmin):
-    list_display = ('id', 'total_amount', 'created_at')
+    list_display = ('id', 'total_amount', 'date')
     search_fields = ('id',)
     
-    # Customizing 'created_at' to display the creation date of the sale
-    def created_at(self, obj):
-        return obj.created_at.strftime('%Y-%m-%d %H:%M:%S')  # Assuming 'created_at' is a DateTimeField
-    created_at.admin_order_field = 'created_at'
-    created_at.short_description = 'Created At'
+    
 
 class SalesItemAdmin(admin.ModelAdmin):
     list_display = ('sale', 'product', 'quantity', 'price')

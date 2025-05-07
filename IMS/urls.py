@@ -31,7 +31,6 @@ urlpatterns = [
     path('category/add/', views.add_category_view, name='add_category'),
 
     path('sales/dashboard/', views.sales_dashboard, name='sales_dashboard'),
-    path('sales/confirm/', views.confirm_sale, name='confirm_sale'),
     path('sales/history/', views.sales_history, name='sales_history'),
-
+    path('sales/confirm/', views.process_sale, name='process_sale'),
 ]

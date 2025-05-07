@@ -156,113 +156,77 @@ def add_category_view(request):
 
 @login_required
 def sales_dashboard(request):
+    username = request.session.get('username')
+    if not username:
+        return redirect('login')
+    try:
+        employee = Employee.objects.get(username=username)
+    except Employee.DoesNotExist:
+        messages.error(request, "Employee not found.")
+        return redirect('login')
     products = ProductInventory.objects.all()
     categories = Category.objects.all()
     return render(request, 'sales_dashboard.html', {
         'products': products,
-        'categories': categories
+        'categories': categories,
+        'employee': employee
     })
 
+
 @login_required
-def confirm_sale(request):
+def sales_history(request):
+    today = timezone.now().date()  # Get today's date in the user's timezone
+    print(f"Today's date: {today}")  # Debugging line to check today's date
+
+    # Try to fetch the sales for today
+    sales = Sale.objects.filter(date__date=today)
+    print(f"Sales found: {sales.count()}")  # Debugging line to check how many sales are found
+
+    return render(request, 'sales_history.html', {'sales': sales})
+
+@login_required
+def process_sale(request):
     if request.method == 'POST':
-        # Get the list of selected products and quantities from the POST request
-        sale_items = request.POST.getlist('sale_items')  # A list of product IDs and quantities
+        try:
+            employee = Employee.objects.get(username=request.session.get('username'))
+        except Employee.DoesNotExist:
+            return JsonResponse({'error': 'Salesperson not found in the Employee database'})
+
+        sale_items_str = request.POST.get('sale_items', '')
+        if not sale_items_str:
+            return JsonResponse({'error': 'No valid products selected'})
+
+        sale_items_list = sale_items_str.split(',')  # ["3:2", "5:1"]
         total_amount = 0
-        
-        # Create the Sale record
-        sale = Sale.objects.create(total_amount=total_amount)
-        
-        # Loop through the sale items and create SalesItem records
-        for item in sale_items:
-            product_id, quantity = item.split(':')  # Assuming format 'product_id:quantity'
-            product = ProductInventory.objects.get(id=product_id)
-            quantity = int(quantity)
-            
-            if product.quantity >= quantity:  # Check if enough stock is available
-                # Create SalesItem record
+
+        sale = Sale.objects.create(salesperson=employee, total_amount=0)  # initial total
+
+        for item in sale_items_list:
+            try:
+                product_id, quantity = item.split(':')
+                product = ProductInventory.objects.get(id=int(product_id))
+                quantity = int(quantity)
+            except (ValueError, ProductInventory.DoesNotExist):
+                continue  # skip invalid entries
+
+            if product.quantity >= quantity:
                 sales_item = SalesItem.objects.create(
                     sale=sale,
                     product=product,
                     quantity=quantity,
-                    price=product.price,
+                    price_per_unit=product.price
                 )
-                
-                # Update inventory
                 product.quantity -= quantity
                 product.save()
 
-                # Add to total amount
                 total_amount += product.price * quantity
             else:
-                return JsonResponse({'error': 'Insufficient stock for product: ' + product.name})
+                return JsonResponse({'error': f'Insufficient stock for product: {product.name}'})
 
-        # Update the total amount in the sale record
         sale.total_amount = total_amount
         sale.save()
 
-        # Return success message
         return JsonResponse({'success': 'Sale completed successfully', 'sale_id': sale.id})
-    
+
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
-@login_required
-def sales_history(request):
-    # Get the current date (ignoring time)
-    today = timezone.now().date()
-
-    # Fetch all sales for today
-    sales = Sale.objects.filter(created_at__date=today)
-
-    return render(request, 'sales_history.html', {'sales': sales})
-
-def process_sale(request):
-    if request.method == 'POST':
-        # Assuming `selected_items` contains the selected product ids and quantities from the form
-        selected_items = request.POST.getlist('selected_items')  # A list of product_id:quantity pairs
-        total_amount = 0
-        sale_items = []
-        
-        # Start a transaction to ensure that both Sale and SalesItems are created correctly
-        with transaction.atomic():
-            # Create a new Sale entry
-            sale = Sale(total_amount=0)  # Total amount is set later after calculating the sale items
-            sale.save()
-
-            for item in selected_items:
-                product_id, quantity = item.split(':')
-                product = ProductInventory.objects.get(id=product_id)
-                quantity = int(quantity)
-                
-                if product.quantity < quantity:
-                    messages.error(request, f"Not enough stock for {product.name}")
-                    return redirect('sales_dashboard')  # Redirect to the sales dashboard if not enough stock
-                
-                # Create the SalesItem entry
-                sales_item = SalesItem(
-                    sale=sale,
-                    product=product,
-                    quantity=quantity,
-                    price=product.price
-                )
-                sales_item.save()
-                sale_items.append(sales_item)
-                
-                # Update the product quantity in inventory
-                product.quantity -= quantity
-                product.save()
-                
-                # Calculate total amount for the sale
-                total_amount += product.price * quantity
-
-            # Update the Sale's total amount after all items are added
-            sale.total_amount = total_amount
-            sale.save()
-
-            # Success message
-            messages.success(request, f"Sale completed successfully! Total: ₹{total_amount}")
-            
-        # Redirect to a page after processing the sale (e.g., sales dashboard or sales history)
-        return redirect('sales_dashboard')
-
-    return render(request, 'sales_dashboard.html')
