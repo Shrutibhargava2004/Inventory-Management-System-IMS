@@ -69,6 +69,7 @@ cd inventlix.com
 # Create and activate virtual environment
 python -m venv venv
 venv\Scripts\activate #(On Windows)
+cd IMS
 
 # Install dependencies
 pip install -r requirements.txt
