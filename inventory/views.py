@@ -20,15 +20,15 @@ def login_view(request):
         username = request.POST['username']
         password = request.POST['password']
         role = request.POST['role']
+        next_url = request.POST.get('next', '')  # get from POST
 
         try:
             user = Employee.objects.get(username=username, role=role)
-            if user.password == password: 
-                # Save user session
+            if user.password == password:
                 request.session['username'] = user.username
                 request.session['role'] = user.role
-
-                # Redirect to role-specific dashboard
+                if next_url:
+                    return redirect(next_url)
                 if role == 'admin':
                     return redirect('admin_dashboard')
                 elif role == 'inventory_manager':
@@ -37,9 +37,9 @@ def login_view(request):
                     return redirect('sales_dashboard')
             else:
                 messages.error(request, "Incorrect password.")
+                
         except Employee.DoesNotExist:
             messages.error(request, "Invalid username or role.")
-    
     return render(request, 'login.html')
 
 def admin_dashboard(request):

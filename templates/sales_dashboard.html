@@ -5,21 +5,24 @@
 <head>
     <meta charset="UTF-8">
     <title>Sales Dashboard | Inventlix</title>
-    <link rel="stylesheet" href="{% static 'css/sales_styles.css' %}">
-    <!-- Bootstrap for Modal and Styling -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="{% static 'css/sales_styles.css' %}">
+
 </head>
 <body>
     <div class="container">
-        <h1>Welcome, {{ employee.username }}</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Welcome, {{ employee.username }}</h1>
+            <a href="{% url 'login' %}" class="btn btn-danger">Logout</a>
+
+        </div>
         
         <div class="row mb-4">
+            
             <div class="col">
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">View Inventory</button>
-            </div>
-            <div class="col">
-                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#salesHistoryModal">Today's Sales History</button>
+                <!-- <button class="btn btn-secondary" >Today's Sales History</button> -->
+                <a href="{% url 'sales_history' %}" class="btn btn-secondary">Today's Sales History</a>
             </div>
         </div>
 
@@ -61,7 +64,7 @@
                 </tbody>
             </table>
 
-            <!-- Proceed Button (disabled initially) -->
+            <!-- Proceed Button -->
             <button type="button" class="btn btn-success" id="proceedButton" data-bs-toggle="modal" data-bs-target="#confirmSaleModal" disabled>Proceed</button>
         </form>
 
@@ -224,7 +227,5 @@
             input.addEventListener("input", updateTotal);
         });
     </script>
-    
-
 </body>
 </html>

@@ -27,12 +27,14 @@
                         <td>{{ sale.total_amount }}</td>
                         <td>
                             <ul>
-                                {% for item in sale.salesitem_set.all %}
-                                <li>{{ item.product.name }} - {{ item.quantity }} @ ₹{{ item.price }}</li>
+                                {% for item in sale.items.all %}
+                                <li>{{ item.product.name }} - {{ item.quantity }} @ ₹{{ item.price_per_unit }}</li>
+                                {% empty %}
+                                <li>No items</li>
                                 {% endfor %}
                             </ul>
                         </td>
-                        <td>{{ sale.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>{{ sale.date|date:"Y-m-d H:i" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
