@@ -19,7 +19,6 @@ from django.urls import path
 from inventory import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('', views.home, name='home'),
     path('login/', views.login_view, name='login'),
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
@@ -33,4 +32,19 @@ urlpatterns = [
     path('sales/dashboard/', views.sales_dashboard, name='sales_dashboard'),
     path('sales/history/', views.sales_history, name='sales_history'),
     path('sales/confirm/', views.process_sale, name='process_sale'),
+
+    path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+
+    path('admin/manage/employees/', views.admin_manage_employee, name='admin_manage_employee'),
+    path('admin/employee/add/', views.add_employee, name='add_employee'),
+    path('admin/employee/edit/', views.edit_employee, name='edit_employee'),
+    path('admin/employee/delete/', views.delete_employee, name='delete_employee'),
+    path('inventory/admin/add/', views.admin_add_product_view, name='admin_add_product'),
+
+
+    path('inventory/', views.admin_inventory_overview, name='admin_inventory_overview'),
+
+
+    path('admin/', admin.site.urls),
+
 ]

@@ -1,0 +1,367 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventory Overview | Inventlix</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #2c3e50;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #2c3e50;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        .navbar a {
+            color: #ecf0f1;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .container {
+            padding-top: 70px;
+            width: 100%;
+        }
+
+        .main-content {
+            width: 100%;
+            padding: 20px 30px;
+            box-sizing: border-box;
+        }
+
+        .main-content h2 {
+            margin-bottom: 20px;
+            color: #34495e;
+        }
+
+        .alert-warning {
+            background-color: #f39c12;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-outline-primary {
+            background-color: transparent;
+            border: 1px solid #2980b9;
+            color: #2980b9;
+        }
+
+        .d-flex {
+            display: flex;
+            align-items: center;
+        }
+
+        .justify-content-between {
+            justify-content: space-between;
+        }
+
+        .mb-3 {
+            margin-bottom: 20px;
+        }
+
+        .me-2 {
+            margin-right: 10px;
+        }
+
+        .form-control,
+        .form-select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        th, td {
+            padding: 12px 10px;
+            border: 1px solid #ccc;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #2c3e50;
+            color: #fff;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .custom-modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-modal.hidden {
+            display: none;
+        }
+
+        .custom-modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            width: 450px;
+            position: relative;
+        }
+
+        .custom-close {
+            float: right;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        img {
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <div class="navbar">
+        <a href="{% url 'admin_dashboard' %}" class="back-btn">← Back to Dashboard</a>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            <h2>Inventory Overview</h2>
+
+            <!-- Low Stock Alert -->
+            <div class="alert alert-warning" role="alert">
+                <strong>Low Stock Alert:</strong> The following products are low in stock:
+                <ul class="mb-0">
+                    {% for product in low_stock_products %}
+                        <li>{{ product.name }} ({{ product.quantity }} left)</li>
+                    {% empty %}
+                        <li>No low stock products 🎉</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Actions & Search -->
+            <div class="d-flex justify-content-between mb-3">
+                <div>
+                    <button class="btn btn-success me-2" onclick="openModal('addProductModal')">+ Add New Product</button>
+                    <button class="btn btn-success" onclick="openModal('addCategoryModal')">+ Add New Category</button>
+                </div>
+                <form class="d-flex" method="get" action="">
+                    <input class="form-control me-2" type="search" name="q" placeholder="Search products...">
+                    <select class="form-select me-2" name="category">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="form-select me-2" name="stock">
+                        <option value="">All Stock Status</option>
+                        <option value="in">In Stock</option>
+                        <option value="low">Low Stock</option>
+                        <option value="out">Out of Stock</option>
+                    </select>
+                    <button class="btn btn-outline-primary" type="submit">Search</button>
+                </form>
+            </div>
+
+            <!-- Inventory Table -->
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>Category</th>
+                            <th>Price (₹)</th>
+                            <th>Quantity</th>
+                            <th>Minimum Qty</th>
+                            <th>Image</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                            <tr>
+                                <td>{{ product.id }}</td>
+                                <td>{{ product.name }}</td>
+                                <td>{{ product.sku_code }}</td>
+                                <td>{{ product.category.name }}</td>
+                                <td>{{ product.price }}</td>
+                                <td>{{ product.quantity }}</td>
+                                <td>{{ product.minimum_quantity }}</td>
+                                <td>
+                                    {% if product.image_path %}
+                                        <img src="{{ product.image_path.url }}" alt="{{ product.name }}" width="60">
+                                    {% else %}
+                                        No Image
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'edit_product' product.id %}" class="btn btn-sm btn-warning">Edit</a>
+                                    <button class="btn btn-sm btn-danger" onclick="openDeleteModal('{{ product.id }}', '{{ product.name }}')">Delete</button>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center">No products found.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Add Product Modal -->
+            <div id="addProductModal" class="custom-modal hidden">
+                <div class="custom-modal-content">
+                    <span class="custom-close" onclick="closeModal('addProductModal')">&times;</span>
+                    <form method="post" action="{% url 'admin_add_product' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <h5>Add New Product</h5>
+                        <div class="mb-3">
+                            <label>Name</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>SKU Code</label>
+                            <input type="text" name="sku_code" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Category</label>
+                            <select name="category" class="form-select" required>
+                                {% for cat in categories %}
+                                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>Price (₹)</label>
+                            <input type="number" name="price" class="form-control" required step="0.01">
+                        </div>
+                        <div class="mb-3">
+                            <label>Quantity</label>
+                            <input type="number" name="quantity" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Minimum Quantity</label>
+                            <input type="number" name="minimum_quantity" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Image</label>
+                            <input type="file" name="image_path" class="form-control">
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('addProductModal')">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Add Product</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Add Category Modal -->
+            <div id="addCategoryModal" class="custom-modal hidden">
+                <div class="custom-modal-content">
+                    <span class="custom-close" onclick="closeModal('addCategoryModal')">&times;</span>
+                    <form method="post" action="{% url 'add_category' %}">
+                        {% csrf_token %}
+                        <h5>Add New Category</h5>
+                        <div class="mb-3">
+                            <label>Category Name</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('addCategoryModal')">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Add Category</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Delete Product Modal -->
+            <div id="deleteProductModal" class="custom-modal hidden">
+                <div class="custom-modal-content">
+                    <span class="custom-close" onclick="closeModal('deleteProductModal')">&times;</span>
+                    <form method="post" id="deleteProductForm">
+                        {% csrf_token %}
+                        <h5>Confirm Deletion</h5>
+                        <p id="deleteProductText">Are you sure you want to delete this product?</p>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('deleteProductModal')">Cancel</button>
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.querySelector('select[name="stock"]').value = "{{ request.GET.stock|default:'' }}";
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function openDeleteModal(productId, productName) {
+            document.getElementById('deleteProductForm').action = `/inventory/delete/${productId}/`;
+            document.getElementById('deleteProductText').textContent = `Are you sure you want to delete "${productName}"?`;
+            openModal('deleteProductModal');
+        }
+    </script>
+</body>
+</html>

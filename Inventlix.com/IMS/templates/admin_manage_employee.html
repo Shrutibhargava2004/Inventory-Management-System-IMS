@@ -1,0 +1,299 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Employees | Inventlix</title>
+    <style>
+        /* Manage Employee Specific Styles */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #2c3e50;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            margin-top: 60px;
+        }
+
+        .main-content {
+            /* margin-left: 250px; */
+            padding: 20px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #1abc9c;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            background-color: #16a085;
+        }
+
+        /* Employee Table and Modal Styles */
+        .employee-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .employee-table th, .employee-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .employee-table th {
+            background-color: #34495e;
+            color: white;
+        }
+
+        .action-btn {
+            background-color: #3498db;
+            color: white;
+            padding: 5px 10px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .action-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .edit {
+            background-color: #f39c12;
+        }
+
+        .edit:hover {
+            background-color: #e67e22;
+        }
+
+        .delete {
+            background-color: #e74c3c;
+        }
+
+        .delete:hover {
+            background-color: #c0392b;
+        }
+
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            overflow: auto;
+        }
+
+        .modal-content {
+            position: relative;
+            top: 25%;
+            left: 25%;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            width: 50%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal .close {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .modal .close:hover {
+            color: red;
+        }
+
+        .modal form input, .modal form select, .modal form button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .modal form button {
+            background-color: #1abc9c;
+            color: white;
+            cursor: pointer;
+        }
+
+        .modal form button:hover {
+            background-color: #16a085;
+        }
+
+        .hidden {
+            display: none !important; 
+        }
+    </style>
+</head>
+<body>
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <a href="{% url 'admin_dashboard' %}" class="back-btn">Back to Dashboard</a>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            <!-- Manage Employees Section -->
+            <h2>Manage Employees</h2>
+            <button class="action-btn" onclick="openModal('addEmployeeModal')">Add Employee</button>
+
+            <!-- Employee Table -->
+            <table class="employee-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in employees %}
+                    <tr>
+                        <td>{{ emp.username }}</td>
+                        <td>{{ emp.email }}</td>
+                        <td>{{ emp.role }}</td>
+                        <td>
+                            <button class="action-btn edit" onclick="openEditModal('{{ emp.id }}', '{{ emp.username }}', '{{ emp.email }}', '{{ emp.role }}')">Edit</button>
+                            <button class="action-btn delete" onclick="openDeleteModal('{{ emp.id }}', '{{ emp.username }}')">Delete</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Add Employee Modal -->
+            <div id="addEmployeeModal" class="modal hidden">
+                <div class="modal-content">
+                    <span class="close" onclick="closeModal('addEmployeeModal')">&times;</span>
+                    <h3>Add Employee</h3>
+                    <form method="POST" action="{% url 'add_employee' %}">
+                        {% csrf_token %}
+                        <input type="text" name="username" placeholder="Name" required>
+                        <input type="email" name="email" placeholder="Email" required>
+                        <input type="password" name="password" placeholder="Password" required>
+                        <select name="role" required>
+                            <option value="admin">Admin</option>
+                            <option value="inventory_manager">Inventory Manager</option>
+                            <option value="salesperson">Salesperson</option>
+                        </select>
+                        <button type="submit">Add Employee</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Edit Employee Modal -->
+            <div id="editEmployeeModal" class="modal hidden">
+                <div class="modal-content">
+                    <span class="close" onclick="closeModal('editEmployeeModal')">&times;</span>
+                    <h3>Edit Employee</h3>
+                    <form method="POST" action="{% url 'edit_employee' %}">
+                        {% csrf_token %}
+                        <input type="hidden" id="edit_id" name="id">
+                        <input type="text" id="edit_name" name="name" placeholder="Name" required>
+                        <input type="email" id="edit_email" name="email" placeholder="Email" required>
+                        <select id="edit_role" name="role" required>
+                            <option value="admin">Admin</option>
+                            <option value="inventory_manager">Inventory Manager</option>
+                            <option value="salesperson">Salesperson</option>
+                        </select>
+                        <button type="submit">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Delete Employee Modal -->
+            <div id="deleteEmployeeModal" class="modal hidden">
+                <div class="modal-content">
+                    <span class="close" onclick="closeModal('deleteEmployeeModal')">&times;</span>
+                    <h3>Delete Employee</h3>
+                    <form method="POST" action="{% url 'delete_employee' %}">
+                        {% csrf_token %}
+                        <input type="hidden" id="delete_id" name="id">
+                        <p>Are you sure you want to delete <strong id="delete_name"></strong>?</p>
+                        <button type="submit" class="action-btn delete">Yes, Delete</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+<script>
+    function openEditModal(id, name, email, role) {
+        console.log("Edit Modal Opened with ID: " + id);  // Debugging line
+        document.getElementById('edit_id').value = id;
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_email').value = email;
+        document.getElementById('edit_role').value = role;
+        document.getElementById('editEmployeeModal').classList.remove('hidden');
+    }
+
+    function openDeleteModal(id, name) {
+        console.log("Delete Modal Opened with ID: " + id);  // Debugging line
+        document.getElementById('delete_id').value = id;
+        document.getElementById('delete_name').textContent = name;
+        document.getElementById('deleteEmployeeModal').classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+        console.log("Closing Modal: " + modalId);  // Debugging line
+        document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function openModal(modalId) {
+        console.log("Opening Modal: " + modalId);  // Debugging line
+        document.getElementById(modalId).classList.remove('hidden');
+    }
+</script>
+
+</body>
+</html>

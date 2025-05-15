@@ -1,12 +1,12 @@
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import ProductInventory, Category, Employee, Sale, SalesItem
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse ,JsonResponse
-from django.db.models import F
+from django.http import JsonResponse
+from django.db.models import F, Sum, Q
 from django.utils import timezone
 
 
@@ -41,9 +41,6 @@ def login_view(request):
         except Employee.DoesNotExist:
             messages.error(request, "Invalid username or role.")
     return render(request, 'login.html')
-
-def admin_dashboard(request):
-    return HttpResponse("Welcome to Admin Dashboard!")
 
 @login_required
 def inventory_dashboard(request):
@@ -230,3 +227,130 @@ def process_sale(request):
 
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
+@login_required
+def admin_dashboard(request):
+    total_employees = Employee.objects.count()
+    total_products = ProductInventory.objects.count()
+    today = timezone.now().date()
+    todays_sales = Sale.objects.filter(date__date=today).aggregate(total_sales=Sum('total_amount'))['total_sales'] or 0
+
+    products = ProductInventory.objects.all()
+
+    low_stock_items = products.filter(quantity__lt=F('minimum_quantity')) 
+    low_stock_count = low_stock_items.count()
+
+    
+    context = {
+        'total_employees': total_employees,
+        'total_products': total_products,
+        'todays_sales': todays_sales,
+        'low_stock_count': low_stock_count,
+        'products': products,
+        'low_stock_items': low_stock_items,
+    }
+
+    return render(request, 'admin_dashboard.html', context)
+
+def admin_manage_employee(request):
+    employees = Employee.objects.all()
+    return render(request, 'admin_manage_employee.html', {'employees': employees})
+
+def edit_employee(request):
+    if request.method == "POST":
+        emp = get_object_or_404(Employee, id=request.POST['id'])
+        emp.username = request.POST['name']
+        emp.email = request.POST['email']
+        emp.role = request.POST['role']
+        emp.save()
+        messages.success(request, "Employee updated successfully.")
+    return redirect('admin_manage_employee') 
+
+def delete_employee(request):
+    if request.method == "POST":
+        emp = get_object_or_404(Employee, id=request.POST['id'])
+        emp.delete()
+        messages.success(request, "Employee deleted successfully.")
+    return redirect('admin_manage_employee')
+
+def add_employee(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        email = request.POST['email']
+        password = request.POST['password']
+        role = request.POST['role']
+
+        if Employee.objects.filter(username=username).exists():
+            messages.error(request, "Username already exists.")
+            return redirect('admin_manage_employee') 
+
+        employee = Employee(username=username, email=email, role=role)
+        employee.set_password(password) 
+        employee.save()
+
+        messages.success(request, "Employee added successfully.")
+        return redirect('admin_manage_employee')  
+    return redirect('admin_manage_employee')  
+
+def admin_inventory_overview(request):
+    search_query = request.GET.get('q', '')
+    category_id = request.GET.get('category', '')
+    stock_status = request.GET.get('stock', '')
+    products = ProductInventory.objects.all()
+    if search_query:
+        products = products.filter(name__icontains=search_query)
+    if category_id:
+        products = products.filter(category_id=category_id)
+        
+    if stock_status == 'in':
+        products = products.filter(quantity__gt=0)  # In stock: quantity > 0
+    elif stock_status == 'low':
+        products = products.filter(quantity__lte=F('minimum_quantity'), quantity__gt=0)
+    elif stock_status == 'out':
+        products = products.filter(quantity=0)
+
+    low_stock_products = ProductInventory.objects.filter(quantity__lt=F('minimum_quantity'))
+    categories = Category.objects.all()
+
+    context = {
+        'products': products,
+        'low_stock_products': low_stock_products,
+        'categories': categories
+    }
+    return render(request, 'admin_inventory_overview.html', context)
+
+def admin_add_product_view(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        sku_code = request.POST.get('sku_code')
+        price = request.POST.get('price')
+        category_id = request.POST.get('category')
+        quantity = request.POST.get('quantity')
+        minimum_quantity = request.POST.get('minimum_quantity')
+
+        image_path = request.POST.get('image_path')  # Just saving path string
+
+        if ProductInventory.objects.filter(sku_code=sku_code).exists():
+            messages.error(request, "SKU code already exists.")
+            return redirect('add_product')
+
+        category = Category.objects.get(id=category_id)
+        product = ProductInventory.objects.create(
+            name=name,
+            sku_code=sku_code,
+            price=price,
+            category=category,
+            quantity=quantity,
+            minimum_quantity=minimum_quantity,
+            image_path=image_path
+        )
+        messages.success(request, "Product added successfully.")
+        return redirect('admin_inventory_overview')
+
+    categories = Category.objects.all()
+    return render(request, 'add_product.html', {'categories': categories})
+
+def delete_product_view(request, product_id):
+    product = get_object_or_404(ProductInventory, id=product_id)
+    product.delete()
+    messages.success(request, "Product deleted successfully.")
+    return redirect('admin_inventory_overview')
