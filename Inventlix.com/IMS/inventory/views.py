@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
-from django.db.models import F, Sum, Q
+from django.db.models import F, Sum
 from django.utils import timezone
 
 
@@ -20,7 +20,7 @@ def login_view(request):
         username = request.POST['username']
         password = request.POST['password']
         role = request.POST['role']
-        next_url = request.POST.get('next', '')  # get from POST
+        next_url = request.POST.get('next', '')  
 
         try:
             user = Employee.objects.get(username=username, role=role)
@@ -42,7 +42,6 @@ def login_view(request):
             messages.error(request, "Invalid username or role.")
     return render(request, 'login.html')
 
-@login_required
 def inventory_dashboard(request):
     username = request.session.get('username')
     if not username:
@@ -52,9 +51,11 @@ def inventory_dashboard(request):
     except Employee.DoesNotExist:
         messages.error(request, "Employee not found.")
         return redirect('login')
+    
     search_query = request.GET.get('q', '')
     category_id = request.GET.get('category', '')
     products = ProductInventory.objects.all()
+
     if search_query:
         products = products.filter(name__icontains=search_query)
     if category_id:
@@ -64,7 +65,7 @@ def inventory_dashboard(request):
         'products': products,
         'low_stock_products': low_stock_products,
         'categories': Category.objects.all(),
-        'employee': employee,  # Pass the full employee object
+        'employee': employee,  
     }
     return render(request, 'inventory_dashboard.html', context)
 
@@ -127,7 +128,6 @@ def delete_product_view(request, product_id):
     messages.success(request, "Product deleted successfully.")
     return redirect('inventory_dashboard')
 
-@login_required
 def add_category_view(request):
     if request.method == 'POST':
         category_name = request.POST.get('name')  
@@ -151,7 +151,6 @@ def add_category_view(request):
 
     return redirect('inventory_dashboard') 
 
-@login_required
 def sales_dashboard(request):
     username = request.session.get('username')
     if not username:
@@ -170,18 +169,15 @@ def sales_dashboard(request):
     })
 
 
-@login_required
 def sales_history(request):
-    today = timezone.now().date()  # Get today's date in the user's timezone
-    print(f"Today's date: {today}")  # Debugging line to check today's date
-
-    # Try to fetch the sales for today
+    today = timezone.now().date() 
+    # print(f"Today's date: {today}")  
+    #  fetch the sales for today
     sales = Sale.objects.filter(date__date=today)
-    print(f"Sales found: {sales.count()}")  # Debugging line to check how many sales are found
+    # print(f"Sales found: {sales.count()}")   
 
     return render(request, 'sales_history.html', {'sales': sales})
 
-@login_required
 def process_sale(request):
     if request.method == 'POST':
         try:
@@ -196,7 +192,7 @@ def process_sale(request):
         sale_items_list = sale_items_str.split(',')  # ["3:2", "5:1"]
         total_amount = 0
 
-        sale = Sale.objects.create(salesperson=employee, total_amount=0)  # initial total
+        sale = Sale.objects.create(salesperson=employee, total_amount=0)   
 
         for item in sale_items_list:
             try:
@@ -204,7 +200,7 @@ def process_sale(request):
                 product = ProductInventory.objects.get(id=int(product_id))
                 quantity = int(quantity)
             except (ValueError, ProductInventory.DoesNotExist):
-                continue  # skip invalid entries
+                continue  # skip 
 
             if product.quantity >= quantity:
                 sales_item = SalesItem.objects.create(
@@ -227,7 +223,6 @@ def process_sale(request):
 
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
-@login_required
 def admin_dashboard(request):
     total_employees = Employee.objects.count()
     total_products = ProductInventory.objects.count()
@@ -302,7 +297,7 @@ def admin_inventory_overview(request):
         products = products.filter(category_id=category_id)
         
     if stock_status == 'in':
-        products = products.filter(quantity__gt=0)  # In stock: quantity > 0
+        products = products.filter(quantity__gt=0)  
     elif stock_status == 'low':
         products = products.filter(quantity__lte=F('minimum_quantity'), quantity__gt=0)
     elif stock_status == 'out':
@@ -327,7 +322,7 @@ def admin_add_product_view(request):
         quantity = request.POST.get('quantity')
         minimum_quantity = request.POST.get('minimum_quantity')
 
-        image_path = request.POST.get('image_path')  # Just saving path string
+        image_path = request.POST.get('image_path')  
 
         if ProductInventory.objects.filter(sku_code=sku_code).exists():
             messages.error(request, "SKU code already exists.")
